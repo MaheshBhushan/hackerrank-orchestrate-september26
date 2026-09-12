@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--dataset", type=Path, default=root / "dataset")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--samples", action="store_true")
-    parser.add_argument("--estimator", choices=["mean", "max"], default="mean")
+    parser.add_argument("--estimator", choices=["mean", "mean3", "max"], default="mean")
     parser.add_argument(
         "--report-dir",
         type=Path,

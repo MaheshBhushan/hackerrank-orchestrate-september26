@@ -10,6 +10,8 @@ from models import Plan, cents, money
 
 def safe_plan(profile, values, start, payments):
     floor = cents(profile["minimum_balance_to_keep"])
+    if cents(profile["current_available_balance"]) < floor:
+        return False
     paid = 0
     by_day = {}
     for day, amount in payments:

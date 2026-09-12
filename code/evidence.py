@@ -71,6 +71,66 @@ class Dataset:
         return out
 
 
+SETTLED = [
+    "has reached your account",
+    "have reached your account",
+    "have settled in the cash account",
+    "has settled in the cash account",
+    "sudah masuk ke rekening",
+    "was paid",
+    "was received",
+]
+CANCELLED = ["has been cancelled", "was cancelled", "telah dibatalkan", "dibatalkan"]
+AMENDED = ["amended to", "changed to", "remains", "diubah menjadi", "tetap"]
+UNCONFIRMED = [
+    "not confirmed",
+    "not been approved",
+    "pending approval",
+    "still pending",
+    "belum disetujui",
+    "belum dikonfirmasi",
+    "masih menunggu",
+    "bonus",
+]
+
+
+def relevant(messages, request):
+    for m in sorted(messages, key=lambda x: (x["sent_at"], x["message_id"])):
+        if m["sent_at"][:10] > request["request_date"]:
+            continue
+        if m["request_id"] and m["request_id"] != request["request_id"]:
+            continue
+        yield m
+
+
+def resolve_message_amendments(events, messages, request):
+    """Apply explicit cancellation, settlement and amount amendments to linked events.
+
+    Only messages that name a supplied event row (related_event_id) and were sent on
+    or before the request date are applied, in chronological order, so the newest
+    explicit statement wins. Statements about pending credits leave events pending.
+    """
+    by_id = {e["event_id"]: e for e in events}
+    for m in relevant(messages, request):
+        e = by_id.get(m.get("related_event_id", ""))
+        if e is None:
+            continue
+        low = m["message_text"].lower()
+        if any(s in low for s in CANCELLED):
+            e["status"] = "cancelled"
+            continue
+        if "not reached" in low or "belum masuk" in low or "has not been credited" in low:
+            continue
+        if any(s in low for s in SETTLED) and e["status"] in ("pending", "scheduled"):
+            e["status"] = "settled"
+            e["settlement_date"] = m["sent_at"][:10]
+            continue
+        amounts = re.findall(r"\b(INR|ZAR|IDR|USD|EUR)\s+([\d,]+(?:\.\d+)?)", m["message_text"])
+        if amounts and any(s in low for s in AMENDED):
+            e["currency"], e["amount"] = amounts[-1][0], amounts[-1][1].replace(",", "")
+    return events
+
+
 def payroll_facts(messages, request):
     """Recognize explicit payroll facts in the supplied English/Indonesian messages.
 
@@ -78,11 +138,7 @@ def payroll_facts(messages, request):
     A limited grammar intentionally ignores payout promotions and embedded commands.
     """
     facts = {}
-    for m in sorted(messages, key=lambda x: (x["sent_at"], x["message_id"])):
-        if m["sent_at"][:10] > request["request_date"]:
-            continue
-        if m["request_id"] and m["request_id"] != request["request_id"]:
-            continue
+    for m in relevant(messages, request):
         text = m["message_text"]
         low = text.lower()
         amounts = re.findall(r"\b(INR|ZAR|IDR|USD|EUR)\s+([\d,]+(?:\.\d+)?)", text)
@@ -102,7 +158,13 @@ def payroll_facts(messages, request):
                 ]
             ):
                 facts["ended"] = True
-            if amounts:
+            # An amount attached to an unapproved bonus or commission is not
+            # confirmed salary and must not replace the base salary.
+            confirmed = amounts and not (
+                any(s in low for s in UNCONFIRMED)
+                and not any(s in low for s in ["base salary", "gaji pokok", "regular salary", "gaji rutin"])
+            )
+            if confirmed:
                 facts["currency"], facts["amount"] = (
                     amounts[0][0],
                     amounts[0][1].replace(",", ""),

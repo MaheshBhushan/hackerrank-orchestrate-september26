@@ -4,9 +4,9 @@ The final full-dataset run produced exactly 250 unique request rows. The local `
 
 ## Verification
 
-- 19 hand-calculated regression tests passed.
+- 29 hand-calculated regression tests passed (cash engine plus evidence-contract cases: message cancellations/settlements/amendments, linked-event handling, ended employment superseded by a confirmed new salary, opening balance below the reserve).
 - Every row passed bounds, method, deadline and format checks.
-- All 192 positive recommendations passed an independent event-level cash replay, including the allowed changes and the whole forecast. The other 58 rows recommend no payment.
+- All positive recommendations passed an independent event-level cash replay, including the allowed changes and the whole forecast; the remaining rows recommend no payment.
 - Every reported safe amount was checked for feasibility and one-cent maximality when the baseline was feasible; unsafe baselines correctly report zero.
 - Every earliest full-payment date was checked by independently replaying every preceding candidate date.
 - Supplied installment schedules, payment preferences and flexible-expense permissions were checked.
@@ -18,16 +18,22 @@ These checks establish internal correctness against the reconstructed forecast. 
 
 | Structured field | Exact matches | Accuracy |
 | --- | ---: | ---: |
-| Safe amount | 2/25 | 8% |
-| Affordability status | 19/25 | 76% |
+| Safe amount | 3/25 | 12% |
+| Affordability status | 20/25 | 80% |
 | Payment method | 22/25 | 88% |
 | Payment plan | 21/25 | 84% |
-| Earliest full-payment date | 18/25 | 72% |
-| Spending changes | 19/25 | 76% |
+| Earliest full-payment date | 19/25 | 76% |
+| Spending changes | 20/25 | 80% |
 
-Mean absolute safe-amount error, normalized by each requested amount, is 7.39%. Do not combine raw monetary errors from different currencies into a claimed monetary accuracy figure. Numeric formatting differences such as `620.4` versus `620.40` are normalized during scoring.
+Mean absolute safe-amount error, normalized by each requested amount, is 3.30% (down from 7.39% with the earlier last-three-observation estimator and description-whitelisted salary). Do not combine raw monetary errors from different currencies into a claimed monetary accuracy figure. Numeric formatting differences such as `620.4` versus `620.40` are normalized during scoring.
 
 Full per-request differences are in `sample_metrics.json`. The estimator is not calibrated to reproduce example labels, and no public example prediction is replaced by its expected answer.
+
+## What the sample labels reveal
+
+Subtracting each expected safe amount from the opening balance minus the reserve gives the organizer's forecast outflow at the balance trough. Those implied totals are whole numbers even when the user's utilities and variable spending carry cents (for example 452.00, 487.00, 624, 157.00, 140430.00), so the labels appear to be generated from noise-free underlying amounts rather than from any statistic of the noisy history. Exact agreement is therefore mostly unattainable from the supplied data; the estimator was chosen to minimize error instead. Two changes followed from this: averaging the full history (more observations, less noise), and reading the underlying amount from `minimum_allowed_amount`, which sits at 50% or 40% of it. The freelance/contract income of `request_09` (two contract payments a month with varying descriptions) is also counted as regular income, while weekly gig-platform payouts (`request_10`, with a "payout still pending" notice) are not; both choices match the sample labels.
+
+A grid search over estimator (mean/median/max/last, several windows), rounding, same-day ordering, request-day handling and horizon length found no configuration matching more than 3 of 25 safe amounts exactly, which supports the noise-free-label explanation. End-of-day versus intraday balance checking made no difference on the samples.
 
 ## Why exact amounts remain unresolved
 

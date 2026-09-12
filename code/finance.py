@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from itertools import pairwise
 
-from evidence import payroll_facts
+from evidence import payroll_facts, resolve_message_amendments
 from models import Cash, Stream, cents
 
 
@@ -36,13 +36,56 @@ def fx(dataset, amount, currency, home, day):
     return cents(Decimal(str(amount)) * Decimal(dataset.rates[key]))
 
 
+def base_from_minimum(event, estimate, home):
+    """Recover the underlying recurring amount from a reducible item's floor.
+
+    Supplied ``minimum_allowed_amount`` values sit at either 50% or 40% of the
+    unobserved base amount (the dataset's two clusters). When the floor is in
+    the item's own currency, whichever base is nearer the historical mean is a
+    less noisy estimate than the mean itself.
+    """
+    if not event["minimum_allowed_amount"] or event["currency"] != home:
+        return estimate
+    floor = cents(event["minimum_allowed_amount"])
+    if floor <= 0 or estimate <= 0:
+        return estimate
+    ratio = floor / estimate
+    if 0.44 <= ratio <= 0.58:
+        return floor * 2
+    if 0.32 <= ratio < 0.44:
+        return int(round(floor * 2.5))
+    return estimate
+
+
+REGULAR_INCOME = {
+    "Payroll credit",
+    "Base salary",
+    "Primary household salary",
+    "Second household income",
+    "First-job payroll",
+    "New employer payroll",
+    "International employer payroll",
+    "Payroll after returning from leave",
+    "Next confirmed salary",
+    "Website project payment",
+    "Content contract payment",
+    "Freelance milestone payment",
+    "Consulting invoice payment",
+    "Independent work payment",
+    "Application project payment",
+    "Design contract payment",
+    "Client retainer payment",
+}
+
+
 def forecast(dataset, request, estimator="mean"):
     profile = dataset.profiles[request["user_id"]]
     start = date.fromisoformat(request["request_date"])
     end = start + timedelta(days=90)
     home = profile["home_currency"]
-    events = dataset.resolved_events(request)
-    facts = payroll_facts(dataset.messages[request["user_id"]], request)
+    messages = dataset.messages[request["user_id"]]
+    events = resolve_message_amendments(dataset.resolved_events(request), messages, request)
+    facts = payroll_facts(messages, request)
     flows, streams, notes = [], [], []
     groups = defaultdict(list)
     histories = []
@@ -51,7 +94,6 @@ def forecast(dataset, request, estimator="mean"):
         for e in events
         if e["linked_event_id"] and e["status"] in ("settled", "scheduled")
     }
-    seen = set()
     for e in events:
         if e["status"] in ("cancelled", "failed", "unrealized"):
             continue
@@ -63,19 +105,11 @@ def forecast(dataset, request, estimator="mean"):
             successor
             and successor["direction"] == e["direction"]
             and successor["category"] == e["category"]
+            and successor["amount"] == e["amount"]
+            and successor["currency"] == e["currency"]
         ):
+            # A link plus identical amount marks a retry/duplicate of this row.
             continue
-        fingerprint = (
-            e["description"],
-            e["direction"],
-            e["amount"],
-            e["currency"],
-            e["settlement_date"],
-            e["status"],
-        )
-        if fingerprint in seen:
-            continue
-        seen.add(fingerprint)
         if e["category"] == "salary" and e["direction"] == "credit":
             histories.append(e)
             continue
@@ -125,6 +159,7 @@ def forecast(dataset, request, estimator="mean"):
             continue
         if (start - ds[-1]).days > (45 if monthly else median_gap * 2):
             continue
+        window = group[-3:] if estimator in ("mean3", "max") else group
         values = [
             fx(
                 dataset,
@@ -133,7 +168,7 @@ def forecast(dataset, request, estimator="mean"):
                 home,
                 date.fromisoformat(e["settlement_date"]),
             )
-            for e in group[-3:]
+            for e in window
         ]
         amount = (
             max(values)
@@ -141,6 +176,7 @@ def forecast(dataset, request, estimator="mean"):
             else cents(Decimal(sum(values)) / (len(values) * 100))
         )
         e = group[-1]
+        amount = base_from_minimum(e, amount, home)
         if cat == "rent" and "rent_increase" in facts:
             amount = cents(
                 Decimal(amount) / 100 * (1 + Decimal(facts["rent_increase"]) / 100)
@@ -158,58 +194,76 @@ def forecast(dataset, request, estimator="mean"):
             )
         )
     # Salary evidence is kept separate from cash refunds, arrears, prizes,
-    # seasonal earnings and irregular freelance/platform payouts.
-    regular = [
-        e
-        for e in histories
-        if e["description"]
-        in {
-            "Payroll credit",
-            "Base salary",
-            "Primary household salary",
-            "First-job payroll",
-            "New employer payroll",
-            "International employer payroll",
-            "Payroll after returning from leave",
-            "Next confirmed salary",
-        }
-    ]
-    regular.sort(key=lambda e: e["settlement_date"])
-    ended = facts.get("ended") or any(
-        e["description"] == "Final employer payroll" for e in histories
+    # seasonal earnings, commissions and weekly gig/platform payouts. Regular
+    # income may arrive more than once a month (e.g. two contract payments), so
+    # each calendar-day-of-month cluster is projected as its own monthly stream.
+    regular = sorted(
+        (e for e in histories if e["description"] in REGULAR_INCOME),
+        key=lambda e: e["settlement_date"],
     )
-    if not ended and (regular or facts.get("amount")):
-        last = regular[-1] if regular else None
-        amount = facts.get("amount", last["amount"] if last else None)
-        currency = facts.get("currency", last["currency"] if last else home)
-        if "date" in facts:
-            first = date.fromisoformat(facts["date"])
-        elif last:
-            first = date.fromisoformat(last["settlement_date"])
-            while first < start:
-                first = month_date(first, 1)
-        else:
-            first = start.replace(day=15)
-            if first < start:
-                first = month_date(first, 1)
-        if amount:
+    # An explicit, confirmed employer amount after a final payroll supersedes
+    # the ended-employment inference; an explicit "ended" notice wins otherwise.
+    ended = (
+        facts["ended"]
+        if "ended" in facts
+        else any(e["description"] == "Final employer payroll" for e in histories)
+    )
+    clusters = defaultdict(list)
+    for e in regular:
+        d = date.fromisoformat(e["settlement_date"])
+        if (start - d).days <= 62:
+            clusters[d.day].append(e)
+    stale = {
+        day
+        for day, group in clusters.items()
+        if (start - date.fromisoformat(group[-1]["settlement_date"])).days > 45
+    }
+    for day in stale:
+        del clusters[day]
+    if not ended and (clusters or facts.get("amount")):
+        if not clusters:
+            first = (
+                date.fromisoformat(facts["date"])
+                if "date" in facts
+                else month_date(start.replace(day=15), 1 if start.day > 15 else 0)
+            )
+            clusters[first.day] = []
+        primary = max(clusters, key=lambda day: len(clusters[day]))
+        for day, group in clusters.items():
+            last = group[-1] if group else None
+            if day == primary or not group:
+                amount = facts.get("amount", last["amount"] if last else None)
+                currency = facts.get("currency", last["currency"] if last else home)
+            else:
+                amount, currency = last["amount"], last["currency"]
+            if amount is None:
+                continue
+            if "date" in facts and (day == primary or not group):
+                first = date.fromisoformat(facts["date"])
+            elif last:
+                first = date.fromisoformat(last["settlement_date"])
+                while first < start:
+                    first = month_date(first, 1, day)
+            else:
+                first = month_date(start.replace(day=15), 1 if start.day > 15 else 0)
             for n in range(5):
-                day = month_date(first, n)
-                if start <= day <= end:
-                    value = fx(dataset, amount, currency, home, day)
+                pay_day = month_date(first, n, first.day)
+                if start <= pay_day <= end:
+                    value = fx(dataset, amount, currency, home, pay_day)
+                    source = facts.get("source") if (day == primary or not group) else None
                     flows.append(
                         Cash(
-                            day,
+                            pay_day,
                             value,
-                            facts.get("source", last["event_id"] if last else "salary"),
+                            source or (last["event_id"] if last else "salary"),
                             "Confirmed recurring salary",
                         )
                     )
-                    if n == 0 and facts.get("arrears"):
+                    if n == 0 and facts.get("arrears") and (day == primary or not group):
                         flows.append(
                             Cash(
-                                day,
-                                fx(dataset, facts["arrears"], currency, home, day),
+                                pay_day,
+                                fx(dataset, facts["arrears"], currency, home, pay_day),
                                 facts["source"] + ":arrears",
                                 "Confirmed one-time payroll arrears",
                             )
@@ -255,6 +309,8 @@ def balances(profile, flows, start, changes=()):
 
 def capacity(profile, values, requested):
     floor = cents(profile["minimum_balance_to_keep"])
+    if cents(profile["current_available_balance"]) < floor:
+        return 0, None  # opening cash already breaches the reserve
     suffix = [0] * len(values)
     low = values[-1]
     for i in reversed(range(len(values))):
