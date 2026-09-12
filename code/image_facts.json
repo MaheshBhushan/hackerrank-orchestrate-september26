@@ -1,0 +1,18 @@
+{
+  "f37b40e6af42c664846057252cac89ad41b7d029dfe8dacff2db8cceb79fa5ba": {"image_id":"image_01","amount":"4365000","currency":"IDR","evidence":"Net Pay IDR 4,365,000; August 2019 payslip, already settled."},
+  "ccd779e5382b1bcfacfb47d4ccf346ffd667a34c8b94d0cfd48aa4a609bd117d": {"image_id":"image_02","amount":"100000","currency":"INR","evidence":"Total 200,000; received 100,000; Balance Due 100,000."},
+  "e5fb0bbcda6cc06f8ea95e32e45d4c76acd8c594f4b02ff0d78e6006e103ee4d": {"image_id":"image_03","amount":"41272","currency":"INR","evidence":"Net Amount 41272.0; Cash Paid 41272.00."},
+  "281e7f1e7bd1f98fbd53cde1381977373e610e6634b11c98098000001ff10f0c": {"image_id":"image_04","amount":"2854","currency":"INR","evidence":"Delivered grocery order; Item Bill 2854.00."},
+  "9abcda5647afb3dcdf91613253ac0160bd722333af33a4b952dfc96fea6ff97b": {"image_id":"image_05","amount":"704.05","currency":"INR","due_date":"2026-02-06","overdue_amount":"822.05","evidence":"Amount due till 06-Feb-2026 704.05; amount due after 06-Feb-2026 822.05."},
+  "9055551fbe5940feb01b947e1f18ccfed093192d103b1e930a56df0ea7cd3cb4": {"image_id":"image_06","amount":"1995","currency":"INR","evidence":"Invoice total 1995.00, corroborated by amount in words."},
+  "f6d30a74355224c0b5cda2d7f96399a7b1a0afe4f9fe59ea048bbecb1a21311e": {"image_id":"image_07","amount":"8528","currency":"INR","evidence":"PAID stamp; rounded Grand Total (RS) 8528."},
+  "e28592ad8b4dacd03055e0b1ebc46670c83fbfa1162af07bdef33bb226bf63c8": {"image_id":"image_08","amount":"15339","currency":"INR","evidence":"Receipt: Total Amount Received 15,339.00; paid 24 July, not the August due date."},
+  "e0e74e14425d923ff8a5c6db26ec6f4f26ee4697bfd257e414ba05c947a75ba8": {"image_id":"image_09","amount":"723","currency":"INR","evidence":"Receipt: Total Amount Received 723.00; paid 7 June."},
+  "c90f98caf0877083e471fd47dace772f83d4782037cf112e97c63f79a10ea8cf": {"image_id":"image_10","amount":"79679.26","currency":"INR","evidence":"Total and Balance Due both 79,679.26, corroborated by words."},
+  "795e000d48428c97748e8af370cb02b604bec88cc52ec8930f38dc744624e886": {"image_id":"image_11","amount":"3650","currency":"INR","evidence":"Amount Payable 3650.00; Amount Paid 0.00; Balance 3650.00."},
+  "e10b0123e66d512d82f6c431fb741053b336627b89b9d9a138071ac6980a14ff": {"image_id":"image_12","amount":"33.50","currency":"USD","evidence":"Total $33.50; tendered $40.00 less $6.50 change."},
+  "1ae54b378a9556d94b753093ba80e7117caf86fab4d3fe11ec84e3dd2f6d6dd8": {"image_id":"image_13","amount":"2298","currency":"INR","evidence":"Total paid 2298 including taxes and delivery."},
+  "bf88e4aa35e6f36304cbf76bf6f505f32b04466bfd5f7df693fcb3ebe8a3e2c1": {"image_id":"image_14","amount":"4593","currency":"INR","evidence":"Handwritten TOTAL 4593.00; visually reviewed because OCR is unreliable."},
+  "0c0fe3d79e670f2b423bbb2aafc0b5601d3eb4e659ac64058cd189abf7792ee1": {"image_id":"image_15","amount":"9968","currency":"INR","evidence":"Grand Total including taxes 9,968.00."},
+  "2665cf731a861ddb217be5b8082fbd390850a7a98feec018519b6fda0b30b4f8": {"image_id":"image_16","amount":"393.22","currency":"INR","evidence":"333.24 energy plus CGST 29.99 and SGST 29.99; Total 393.22; WALLET payment."}
+}

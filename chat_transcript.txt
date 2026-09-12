@@ -1,0 +1,39 @@
+Buy or Wait? — abridged development transcript
+Tool: Codex (OpenAI)
+Date: 2026-09-12
+
+This is an abridged transcript of the current implementation turn, with tool outcomes summarized. It is not a raw export of the complete Codex session. Preserve the full conversation separately if a complete transcript is required.
+
+USER:
+https://github.com/interviewstreet/hackerrank-orchestrate-september26  AND DECIDE THE BEST ANSWERS
+
+ASSISTANT:
+I’ll read the repository’s rules and data, then calculate and validate the recommendations for your requests.
+
+TOOL OUTCOMES:
+Cloned the public participant repository into challenge/. Read AGENTS.md, CLAUDE.md, problem_statement.md and dataset schemas. Confirmed 250 evaluation requests and 25 solved samples. The workspace request file matches the repository request file.
+
+ASSISTANT:
+The data includes salary changes, delayed pay, ended jobs, refunds, and bills whose amounts exist only in images. Recurrence is not explicitly marked, so the engine must infer it from history while excluding bonuses and other one-off credits. I’m testing those assumptions against the solved examples.
+
+TOOL OUTCOMES:
+Ran local OCR on all 16 supplied images and visually reviewed all 16. Extracted only financial facts, cached with image hashes. Implemented exact-money event reconstruction, dated FX, recurrence, 90-day simulation, candidate generation, preference/deadline filtering and ranking.
+
+ASSISTANT:
+The first version produces all 250 rows. On the public samples it matches 22 of 25 payment methods, but only 2 of 25 safe amounts. I’m investigating that gap before treating the output as final: the specification leaves the variable-expense estimator unspecified, and some sample results appear inconsistent with explicit salary updates. I’ll preserve those discrepancies in the evaluation report rather than hide them.
+
+TOOL OUTCOMES:
+Compared observed-cadence mean forecasts with a maximum-observation stress scenario. The stress scenario reduced sample agreement. Retained the explicit baseline assumptions; did not insert sample labels or use organizer-only data. Added an independent event-level verifier and 19 hand-calculated regression tests. Corrected Indonesian delayed-pay parsing, one-time arrears handling, numeric option tie-breaking and exact monetary averaging.
+
+ASSISTANT:
+All 250 rows pass the independent verifier, and the 19 hand-calculated regression tests pass.
+
+One correction to my earlier architecture review: if the safe-today amount and earliest full-payment date are computed from the same unchanged timeline, splitting the payment that way is safe mathematically. Keeping the replay check is still useful for catching implementation errors.
+
+FINAL ARTIFACT SUMMARY:
+output.csv: 250 predictions, including 192 feasible positive recommendations and 58 no-payment recommendations under the documented forecast.
+code.zip: runnable Python solution and required evaluation/usage_report.md.
+code/evaluation/results.md: complete sample metrics, forecast assumptions and material discrepancies.
+code/evaluation/run_report.json: input/output hashes, per-request verification and final-run usage.
+
+The exact safe-amount sample agreement is only 2/25. This remains a validated draft; hidden-test accuracy is not established. No external submission, GitHub push, or message to organizers was performed.
