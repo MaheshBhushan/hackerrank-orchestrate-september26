@@ -53,11 +53,11 @@ def base_from_minimum(event, estimate, home):
     if 0.44 <= ratio <= 0.58:
         return floor * 2
     if 0.32 <= ratio < 0.44:
-        return int(round(floor * 2.5))
+        return round(floor * 2.5)
     return estimate
 
 
-REGULAR_INCOME = {
+EMPLOYMENT_INCOME = {
     "Payroll credit",
     "Base salary",
     "Primary household salary",
@@ -67,6 +67,8 @@ REGULAR_INCOME = {
     "International employer payroll",
     "Payroll after returning from leave",
     "Next confirmed salary",
+}
+CONTRACT_INCOME = {
     "Website project payment",
     "Content contract payment",
     "Freelance milestone payment",
@@ -76,6 +78,7 @@ REGULAR_INCOME = {
     "Design contract payment",
     "Client retainer payment",
 }
+REGULAR_INCOME = EMPLOYMENT_INCOME | CONTRACT_INCOME
 
 
 def forecast(dataset, request, estimator="mean"):
@@ -84,7 +87,9 @@ def forecast(dataset, request, estimator="mean"):
     end = start + timedelta(days=90)
     home = profile["home_currency"]
     messages = dataset.messages[request["user_id"]]
-    events = resolve_message_amendments(dataset.resolved_events(request), messages, request)
+    events = resolve_message_amendments(
+        dataset.resolved_events(request), messages, request
+    )
     facts = payroll_facts(messages, request)
     flows, streams, notes = [], [], []
     groups = defaultdict(list)
@@ -113,7 +118,7 @@ def forecast(dataset, request, estimator="mean"):
         if e["category"] == "salary" and e["direction"] == "credit":
             histories.append(e)
             continue
-        if e["status"] in ("pending", "scheduled") or d >= start:
+        if e["status"] in ("pending", "scheduled") or d > start:
             if e["direction"] == "debit" or e["status"] == "settled":
                 when = max(start, d)
                 if when <= end:
@@ -198,7 +203,19 @@ def forecast(dataset, request, estimator="mean"):
     # income may arrive more than once a month (e.g. two contract payments), so
     # each calendar-day-of-month cluster is projected as its own monthly stream.
     regular = sorted(
-        (e for e in histories if e["description"] in REGULAR_INCOME),
+        (
+            e
+            for e in histories
+            if e["description"] in REGULAR_INCOME
+            and not (
+                facts.get("secondary_household_ended")
+                and e["description"] == "Second household income"
+            )
+            and not (
+                facts.get("other_invoices_unconfirmed")
+                and e["description"] in CONTRACT_INCOME
+            )
+        ),
         key=lambda e: e["settlement_date"],
     )
     # An explicit, confirmed employer amount after a final payroll supersedes
@@ -248,9 +265,17 @@ def forecast(dataset, request, estimator="mean"):
                 first = month_date(start.replace(day=15), 1 if start.day > 15 else 0)
             for n in range(5):
                 pay_day = month_date(first, n, first.day)
+                if (
+                    last
+                    and last["status"] == "settled"
+                    and pay_day <= date.fromisoformat(last["settlement_date"])
+                ):
+                    continue  # already included in the current available balance
                 if start <= pay_day <= end:
                     value = fx(dataset, amount, currency, home, pay_day)
-                    source = facts.get("source") if (day == primary or not group) else None
+                    source = (
+                        facts.get("source") if (day == primary or not group) else None
+                    )
                     flows.append(
                         Cash(
                             pay_day,
@@ -259,7 +284,11 @@ def forecast(dataset, request, estimator="mean"):
                             "Confirmed recurring salary",
                         )
                     )
-                    if n == 0 and facts.get("arrears") and (day == primary or not group):
+                    if (
+                        n == 0
+                        and facts.get("arrears")
+                        and (day == primary or not group)
+                    ):
                         flows.append(
                             Cash(
                                 pay_day,

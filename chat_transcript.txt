@@ -37,3 +37,13 @@ code/evaluation/results.md: complete sample metrics, forecast assumptions and ma
 code/evaluation/run_report.json: input/output hashes, per-request verification and final-run usage.
 
 The exact safe-amount sample agreement is only 2/25. This remains a validated draft; hidden-test accuracy is not established. No external submission, GitHub push, or message to organizers was performed.
+
+2026-09-13 REVIEW OF THE USER'S COMPLETED IMPLEMENTATION
+
+USER:
+i have completed the task just look into it and fix the remaining fgapos you find to improve the project
+
+REVIEW SUMMARY (Codex):
+Reviewed user commit 2f68860, which improved the full-history estimator and income cadence handling. Preserved those changes. Fixed unapproved invoice projections affecting 15 requests and an ended secondary household salary affecting request_154. Added protections for negated cancellations, immutable evidence inputs, and same-day settled transactions already included in the current balance. Added six regression cases, for 35 passing tests total. Updated the ZIP verifier to test both extraction layouts without solved sample labels and refreshed submission instructions.
+
+Public sample results remain 22/25 methods, 21/25 plans, 20/25 statuses, and 3/25 exact safe amounts; normalized safe-amount MAE is 3.30%. Hidden-test correctness is not certified. The challenge README accepts the local gitignored log.txt as the required transcript; this file remains supplementary and abridged.

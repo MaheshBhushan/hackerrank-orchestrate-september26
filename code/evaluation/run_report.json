@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-09-12T18:25:14.416393+00:00",
+  "generated_at": "2026-09-13T09:27:05.246406+00:00",
   "requests": 250,
   "estimator": "mean",
   "horizon_days": 90,
-  "output_sha256": "8af8753475349e0b030e994808e7349878ea31e5ea348e54e4683d3d76869344",
+  "output_sha256": "2c6bf57dcdb80b848f6b4b4092d68d03c1a40ee78be954f6029f07b652deb0b2",
   "input_sha256": {
     "exchange_rates.csv": "3de3877e48707fea1c9cd62d1931d8cc6352992ff9549ad41a1580649b1bf3e3",
     "financial_events.csv": "f6a7ccf24d9bfd4a019977ea88a9086e5851b3565b1816890fee5023bbd25f1f",
@@ -21,12 +21,12 @@
   "audit": [
     {
       "safe": true,
-      "minimum_balance": 71693581.52,
-      "minimum_date": "2025-08-07",
+      "minimum_balance": 55993270.2,
+      "minimum_date": "2025-10-26",
       "baseline_safe": true,
       "request_id": "request_26",
       "payment_option_id": "",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -99,12 +99,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 419209.0,
-      "minimum_date": "2024-12-07",
+      "minimum_balance": 279528.33,
+      "minimum_date": "2025-03-03",
       "baseline_safe": true,
       "request_id": "request_34",
       "payment_option_id": "",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -373,12 +373,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 4628.68,
-      "minimum_date": "2025-08-07",
+      "minimum_balance": 3029.73,
+      "minimum_date": "2025-11-03",
       "baseline_safe": true,
       "request_id": "request_62",
       "payment_option_id": "",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {
@@ -407,12 +407,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 243105.89,
-      "minimum_date": "2026-04-07",
+      "minimum_balance": 204767.33,
+      "minimum_date": "2026-06-26",
       "baseline_safe": true,
       "request_id": "request_66",
       "payment_option_id": "",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -485,12 +485,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 63664.08,
-      "minimum_date": "2025-08-07",
+      "minimum_balance": 50072.58,
+      "minimum_date": "2025-10-27",
       "baseline_safe": true,
       "request_id": "request_74",
       "payment_option_id": "",
-      "forecast_events": 38,
+      "forecast_events": 32,
       "inferred_recurring_expenses": 8
     },
     {
@@ -629,12 +629,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 28381.35,
-      "minimum_date": "2026-07-07",
+      "minimum_balance": 19005.31,
+      "minimum_date": "2026-10-03",
       "baseline_safe": true,
       "request_id": "request_90",
       "payment_option_id": "",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -669,12 +669,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 2039.24,
-      "minimum_date": "2024-12-07",
+      "minimum_balance": 1141.41,
+      "minimum_date": "2025-03-03",
       "baseline_safe": true,
       "request_id": "request_94",
       "payment_option_id": "",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -747,12 +747,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 3985.06,
-      "minimum_date": "2026-04-07",
+      "minimum_balance": 1909.51,
+      "minimum_date": "2026-07-03",
       "baseline_safe": true,
       "request_id": "request_102",
       "payment_option_id": "payment_option_287",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {
@@ -823,12 +823,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 52337.74,
-      "minimum_date": "2025-08-07",
+      "minimum_balance": 22531.07,
+      "minimum_date": "2025-11-03",
       "baseline_safe": true,
       "request_id": "request_110",
       "payment_option_id": "payment_option_310",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -939,12 +939,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 48936333.18,
-      "minimum_date": "2025-08-07",
+      "minimum_balance": 24029021.28,
+      "minimum_date": "2025-11-03",
       "baseline_safe": true,
       "request_id": "request_122",
       "payment_option_id": "payment_option_347",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {
@@ -975,12 +975,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 186352.04,
-      "minimum_date": "2026-07-07",
+      "minimum_balance": 134394.56,
+      "minimum_date": "2026-09-25",
       "baseline_safe": true,
       "request_id": "request_126",
       "payment_option_id": "",
-      "forecast_events": 39,
+      "forecast_events": 33,
       "inferred_recurring_expenses": 8
     },
     {
@@ -1123,12 +1123,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 4627.98,
-      "minimum_date": "2024-12-07",
+      "minimum_balance": 3103.32,
+      "minimum_date": "2025-03-03",
       "baseline_safe": true,
       "request_id": "request_142",
       "payment_option_id": "",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {
@@ -1239,12 +1239,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 3482.2,
-      "minimum_date": "2024-12-13",
+      "minimum_balance": 2491.25,
+      "minimum_date": "2025-02-13",
       "baseline_safe": true,
       "request_id": "request_154",
       "payment_option_id": "payment_option_438",
-      "forecast_events": 56,
+      "forecast_events": 53,
       "inferred_recurring_expenses": 9
     },
     {
@@ -1355,12 +1355,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 7211.28,
-      "minimum_date": "2024-12-07",
+      "minimum_balance": 3734.9,
+      "minimum_date": "2025-03-03",
       "baseline_safe": true,
       "request_id": "request_166",
       "payment_option_id": "payment_option_471",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {
@@ -1471,12 +1471,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 6796.22,
-      "minimum_date": "2024-12-07",
+      "minimum_balance": 3269.47,
+      "minimum_date": "2025-03-07",
       "baseline_safe": true,
       "request_id": "request_178",
       "payment_option_id": "payment_option_506",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {
@@ -1891,12 +1891,12 @@
     },
     {
       "safe": true,
-      "minimum_balance": 81933.08,
-      "minimum_date": "2026-01-07",
+      "minimum_balance": 60214.22,
+      "minimum_date": "2026-04-03",
       "baseline_safe": true,
       "request_id": "request_222",
       "payment_option_id": "",
-      "forecast_events": 40,
+      "forecast_events": 34,
       "inferred_recurring_expenses": 8
     },
     {

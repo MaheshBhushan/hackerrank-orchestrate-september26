@@ -4,7 +4,7 @@ The final full-dataset run produced exactly 250 unique request rows. The local `
 
 ## Verification
 
-- 29 hand-calculated regression tests passed (cash engine plus evidence-contract cases: message cancellations/settlements/amendments, linked-event handling, ended employment superseded by a confirmed new salary, opening balance below the reserve).
+- 35 hand-calculated regression tests passed, including explicit restrictions on other invoices, ended household income, negated cancellations, already-settled same-day cash and the existing cash/evidence contracts.
 - Every row passed bounds, method, deadline and format checks.
 - All positive recommendations passed an independent event-level cash replay, including the allowed changes and the whole forecast; the remaining rows recommend no payment.
 - Every reported safe amount was checked for feasibility and one-cent maximality when the baseline was feasible; unsafe baselines correctly report zero.
@@ -31,13 +31,13 @@ Full per-request differences are in `sample_metrics.json`. The estimator is not 
 
 ## What the sample labels reveal
 
-Subtracting each expected safe amount from the opening balance minus the reserve gives the organizer's forecast outflow at the balance trough. Those implied totals are whole numbers even when the user's utilities and variable spending carry cents (for example 452.00, 487.00, 624, 157.00, 140430.00), so the labels appear to be generated from noise-free underlying amounts rather than from any statistic of the noisy history. Exact agreement is therefore mostly unattainable from the supplied data; the estimator was chosen to minimize error instead. Two changes followed from this: averaging the full history (more observations, less noise), and reading the underlying amount from `minimum_allowed_amount`, which sits at 50% or 40% of it. The freelance/contract income of `request_09` (two contract payments a month with varying descriptions) is also counted as regular income, while weekly gig-platform payouts (`request_10`, with a "payout still pending" notice) are not; both choices match the sample labels.
+Some sample targets imply rounded spending budgets despite histories containing variable amounts with cents. One hypothesis is that the reference forecast uses underlying budgets rather than a recent-observation statistic. This does not establish that exact agreement is impossible, nor does it identify the hidden forecasting algorithm. The existing estimator uses full-history means and a heuristic interpreting reducible-expense floors as 40% or 50% of a base amount. These remain explicit modeling assumptions. Recurring contract payments are projected only when no supplied notice says the other invoices are unapproved; an explicit restriction takes precedence over historical cadence.
 
 A grid search over estimator (mean/median/max/last, several windows), rounding, same-day ordering, request-day handling and horizon length found no configuration matching more than 3 of 25 safe amounts exactly, which supports the noise-free-label explanation. End-of-day versus intraday balance checking made no difference on the samples.
 
 ## Why exact amounts remain unresolved
 
-The challenge requires recurrence detection and conservative variable-spending forecasts, but does not specify the observation window, estimator, outlier rule, rounding convention, or projected dates for variable expenses. Reasonable choices change both safe amounts and the dates at which full payment becomes feasible. The current three-observation mean and historical cadence are explicit, reproducible assumptions; they are not asserted to be the hidden organizer model.
+The challenge requires recurrence detection and conservative variable-spending forecasts, but does not specify the observation window, estimator, outlier rule, rounding convention, or projected dates for variable expenses. Reasonable choices change both safe amounts and the dates at which full payment becomes feasible. The current full-history mean, reducible-floor heuristic and historical cadence are explicit, reproducible assumptions; they are not asserted to be the hidden organizer model.
 
 The maximum-of-three stress scenario was also evaluated. It reduced public method agreement to 18/25 and safe-amount agreement to 1/25, so simply inflating every expense does not explain the sample answers.
 
@@ -45,7 +45,13 @@ There are also evidence/label tensions worth clarifying:
 
 - `request_11`: employer `message_08` explicitly states a confirmed base salary of IDR 38,760,000. Older `Base salary` events show IDR 23,256,000. Following the explicit amendment produces a safe full-payment date of 2025-05-15 under this forecast; the sample says 2025-07-15 and recommends spending changes. A different expense model may contribute, but ignoring the amendment is not justified by the stated conflict order.
 - `request_21`: under observed expense cadence, the full USD 1,574.40 is feasible today without changes, whereas the sample requires stopping storage and reducing streaming. The discrepancy is in forecast construction rather than installment or ranking logic.
-- `request_06`: the inferred recurring expense dates leave only EUR 527.52 safe today, compared with EUR 603.30 in the sample. Stopping the EUR 19 streaming plan does not make today's EUR 620.40 payment safe under this reconstructed timeline.
+- `request_06`: the inferred recurring expense dates leave only EUR 523.82 safe today, compared with EUR 603.30 in the sample. Stopping the EUR 19 streaming plan does not make today's EUR 620.40 payment safe under this reconstructed timeline.
+
+## September 13 correctness review
+
+The review fixed unsupported projected contract credits for 15 requests whose messages explicitly restrict income to the approved invoice. It also removed a discontinued second household salary for `request_154`, corrected negated cancellation handling, and made message resolution copy its input records. The full dataset was regenerated and independently validated; all 250 rows pass, including 193 positive recommendations. Public-sample metrics above are unchanged by these fixes because the affected notices belong to evaluation requests.
+
+The ZIP is checked in both a nested `code/` layout and a flat extraction layout. Both reproduce the committed output without access to solved sample labels or the blank output template.
 
 The most valuable next clarification is the organizer's exact variable-expense forecasting convention and how salary amendments should interact with the samples. Hidden-test accuracy cannot be certified from the supplied rules alone. Treat the current output as a validated draft rather than a demonstrated high-accuracy submission.
 

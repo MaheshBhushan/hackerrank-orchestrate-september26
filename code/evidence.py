@@ -110,22 +110,33 @@ def resolve_message_amendments(events, messages, request):
     or before the request date are applied, in chronological order, so the newest
     explicit statement wins. Statements about pending credits leave events pending.
     """
+    events = [dict(e) for e in events]
     by_id = {e["event_id"]: e for e in events}
     for m in relevant(messages, request):
         e = by_id.get(m.get("related_event_id", ""))
         if e is None:
             continue
         low = m["message_text"].lower()
-        if any(s in low for s in CANCELLED):
+        cancellation_denied = re.search(
+            r"\b(?:not|never|tidak|belum)\s+(?:(?:been|being)\s+)?(?:cancelled|canceled|dibatalkan)\b",
+            low,
+        )
+        if any(s in low for s in CANCELLED) and not cancellation_denied:
             e["status"] = "cancelled"
             continue
-        if "not reached" in low or "belum masuk" in low or "has not been credited" in low:
+        if (
+            "not reached" in low
+            or "belum masuk" in low
+            or "has not been credited" in low
+        ):
             continue
         if any(s in low for s in SETTLED) and e["status"] in ("pending", "scheduled"):
             e["status"] = "settled"
             e["settlement_date"] = m["sent_at"][:10]
             continue
-        amounts = re.findall(r"\b(INR|ZAR|IDR|USD|EUR)\s+([\d,]+(?:\.\d+)?)", m["message_text"])
+        amounts = re.findall(
+            r"\b(INR|ZAR|IDR|USD|EUR)\s+([\d,]+(?:\.\d+)?)", m["message_text"]
+        )
         if amounts and any(s in low for s in AMENDED):
             e["currency"], e["amount"] = amounts[-1][0], amounts[-1][1].replace(",", "")
     return events
@@ -149,6 +160,14 @@ def payroll_facts(messages, request):
                 facts["rent_increase"] = pct[1]
         if m["source_type"] == "employer":
             if any(
+                phrase in low
+                for phrase in (
+                    "one household employment record has ended",
+                    "salah satu sumber pendapatan kerja rumah tangga telah berakhir",
+                )
+            ):
+                facts["secondary_household_ended"] = True
+            if any(
                 s in low
                 for s in [
                     "your employment has ended",
@@ -162,7 +181,15 @@ def payroll_facts(messages, request):
             # confirmed salary and must not replace the base salary.
             confirmed = amounts and not (
                 any(s in low for s in UNCONFIRMED)
-                and not any(s in low for s in ["base salary", "gaji pokok", "regular salary", "gaji rutin"])
+                and not any(
+                    s in low
+                    for s in [
+                        "base salary",
+                        "gaji pokok",
+                        "regular salary",
+                        "gaji rutin",
+                    ]
+                )
             )
             if confirmed:
                 facts["currency"], facts["amount"] = (
@@ -201,5 +228,12 @@ def payroll_facts(messages, request):
                 amounts[0][1].replace(",", ""),
                 dates[0],
                 m["message_id"],
+            )
+            facts["other_invoices_unconfirmed"] = any(
+                phrase in low
+                for phrase in (
+                    "other submitted invoices are still awaiting approval",
+                    "faktur lain yang diajukan masih menunggu persetujuan",
+                )
             )
     return facts

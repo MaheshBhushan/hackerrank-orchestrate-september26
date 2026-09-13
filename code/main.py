@@ -26,7 +26,16 @@ FIELDS = [
 
 def main():
     parser = argparse.ArgumentParser()
-    root = Path(__file__).resolve().parent.parent
+    script_dir = Path(__file__).resolve().parent
+    # Support both repository/code/main.py and a ZIP extracted beside dataset/.
+    root = next(
+        (
+            p
+            for p in (script_dir, script_dir.parent, Path.cwd())
+            if (p / "dataset" / "requests.csv").is_file()
+        ),
+        script_dir.parent,
+    )
     parser.add_argument("--dataset", type=Path, default=root / "dataset")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--samples", action="store_true")

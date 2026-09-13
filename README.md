@@ -1,6 +1,10 @@
 # HackerRank Orchestrate
 
-Starter repository for the **HackerRank Orchestrate** 24-hour hackathon (September 2026).
+Solution for the **HackerRank Orchestrate** 24-hour hackathon (September 2026).
+
+The implemented planner uses evidence extraction, exact-money cash-flow simulation, deterministic plan ranking and independent validation. See [run instructions](code/README.md), [evaluation results](code/evaluation/results.md), and [submission files](SUBMISSION.md).
+
+Current checks: 35 regression tests and all 250 output rows pass. Public-sample payment-method agreement is 22/25; exact safe-amount agreement remains 3/25. Validation is relative to the documented forecast assumptions.
 
 ## Buy or Wait?
 
@@ -23,11 +27,11 @@ Read [`problem_statement.md`](./problem_statement.md) for the full task spec, in
 Clone the repository and move into the project directory:
 
 ```bash
-git clone https://github.com/interviewstreet/hackerrank-orchestrate-september26.git
+git clone https://github.com/MaheshBhushan/hackerrank-orchestrate-september26.git
 cd hackerrank-orchestrate-september26
 ```
 
-Build your solution in `code/main.py`, or use another language and document its entry point clearly.
+The implemented entry point is `code/main.py`; Python 3.10+ is required, with no third-party runtime dependencies.
 
 Your solution must:
 
