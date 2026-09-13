@@ -1,197 +1,113 @@
-# HackerRank Orchestrate
+# Buy or Wait?
 
-Solution for the **HackerRank Orchestrate** 24-hour hackathon (September 2026).
+A financial planning engine that reconstructs evidence and checks purchase plans against a 90-day cash-flow forecast.
 
-The implemented planner uses evidence extraction, exact-money cash-flow simulation, deterministic plan ranking and independent validation. See [run instructions](code/README.md), [evaluation results](code/evaluation/results.md), and [submission files](SUBMISSION.md).
+[Quickstart](#quickstart) · [Results](#results) · [Implementation](code/README.md) · [Specification](problem_statement.md) · [Submission](SUBMISSION.md)
 
-Current checks: 35 regression tests and all 250 output rows pass. Public-sample payment-method agreement is 22/25; exact safe-amount agreement remains 3/25. Validation is relative to the documented forecast assumptions.
+## What it does
 
-## Buy or Wait?
+A bank balance alone cannot answer “Can I afford this laptop?” Rent may arrive before salary, a refund may still be pending, and the cheapest payment option may conflict with the user's preferences.
 
-Build an AI-powered financial agent that decides whether a user can safely afford a requested expense.
+This solution combines CSV records, message evidence, and extracted document facts into a financial timeline. Python calculates the safe amount, generates eligible payment plans, ranks them, and independently replays the recommendation before writing `output.csv`.
 
-A user may ask: **"Can I afford this laptop?"**
+**AI helps interpret evidence; code calculates affordability.** The prediction run uses cached image facts and deterministic message parsing, with no model calls or API keys.
 
-Answering well takes more than the current balance. The agent must account for recurring expenses, pending payments, essential spending, confirmed income, available payment options, and relevant details buried in messages and images.
+The current submission contains 250 validated prediction rows and passes 35 regression tests. On the 25 public examples, payment methods match 22/25, but exact safe amounts match only 3/25. A plan can pass the simulator without matching the organizer's forecast.
 
-For every request, the agent decides whether the user should pay in full, pay partially, use installments, wait, or not proceed. The recommendation must be personalized: two users with the same balance can deserve different answers based on their commitments, priorities, payment preferences, and willingness to adjust flexible expenses.
+## Quickstart
 
-A recommendation is safe only if the user can complete the full payment plan, cover essential expenses, and stay above their preferred minimum balance throughout the forecast period.
-
-Read [`problem_statement.md`](./problem_statement.md) for the full task spec, input/output schema, allowed values, conflict-resolution rules, and submission format.
-
----
-
-## Quick Start
-
-Clone the repository and move into the project directory:
+Requires **Python 3.10+**. Runtime dependencies are standard-library only; no package installation is needed. The supplied dataset and image facts are included.
 
 ```bash
 git clone https://github.com/MaheshBhushan/hackerrank-orchestrate-september26.git
 cd hackerrank-orchestrate-september26
-```
-
-The implemented entry point is `code/main.py`; Python 3.10+ is required, with no third-party runtime dependencies.
-
-Your solution must:
-
-- Read the input files from `dataset/`
-- Generate one prediction for every request
-- Write the final predictions to `output.csv` in the repository root
-
-Run the starter Python entry point with:
-
-```bash
 python3 code/main.py
 ```
 
-After running your solution, confirm that `output.csv` exists in the repository root and contains the required columns and one row for every request.
+This generates root-level [output.csv](output.csv), one row for each of the 250 requests, and refreshes the [run report](code/evaluation/run_report.json). Do not confuse it with the blank template at `dataset/output.csv`.
 
-## Important File Locations
+Each prediction includes the safe amount today, recommended method, dated payments, earliest safe full-payment date, permitted spending changes, and an explanation. See the [output schema](problem_statement.md) for exact field definitions.
 
-```text
-dataset/        Input data and the blank output template. Do not modify the input data.
-code/           Your solution code.
-output.csv      Final generated predictions in the repository root.
-code.zip        ZIP file containing your complete solution for submission.
+### Evaluate and verify
+
+Run these commands from the repository root:
+
+```bash
+# Compare predictions with the 25 solved public examples.
+python3 code/main.py --samples
+
+# Run the regression suite.
+PYTHONPATH=code python3 -m unittest discover -s code/evaluation -p 'test_*.py' -v
+
+# Package the implementation and verify the extracted archive.
+python3 code/evaluation/package_solution.py
+python3 code/evaluation/verify_package.py
 ```
 
-The blank template at `dataset/output.csv` is provided as a reference. Your final generated file must be the root-level `output.csv`.
+Archive verification tests both nested `code/` and flat extraction layouts. Each must reproduce the committed predictions without access to solved sample labels or the blank output template.
 
----
+## Results
 
-## Repository Layout
+Field agreement against **25 public solved examples**, not a held-out benchmark. Numeric formatting differences are normalized by the evaluator.
 
-```text
-.
-├── AGENTS.md                         # Rules for AI coding tools + transcript logging
-├── problem_statement.md              # Full challenge statement
-├── README.md                         # You are here
-├── code/                             # Your solution code
-├── output.csv                        # Final generated predictions
-└── dataset/
-    ├── requests.csv                  # 250 requests to evaluate — predict these
-    ├── output.csv                    # Blank submission template
-    ├── sample_requests.csv           # 25 solved examples
-    ├── financial_profiles.csv        # Balances, minimum balance, priorities, preferences
-    ├── financial_events.csv          # Historical, pending, and confirmed transactions
-    ├── request_payment_options.csv   # Payment options available per request
-    ├── exchange_rates.csv            # Fixed, dated conversion rates
-    ├── messages.csv                  # Messages tied to users, requests, or events
-    ├── images.csv                    # Payroll letters, statements, bills, receipts
-    └── media/
-        └── images/
+| Output field | Exact matches | Agreement |
+| --- | ---: | ---: |
+| Safe amount today | 3/25 | 12% |
+| Affordability status | 20/25 | 80% |
+| Payment method | 22/25 | 88% |
+| Payment schedule | 21/25 | 84% |
+| Earliest full-payment date | 19/25 | 76% |
+| Spending changes | 20/25 | 80% |
+
+Mean absolute safe-amount error, divided by each request's amount before averaging, is **3.30%**. This avoids combining raw errors across currencies.
+
+All 250 output rows pass the local validator, including independent cash replay for 193 positive recommendations. The other 57 recommend no payment. See [methodology, discrepancies, and limitations](code/evaluation/results.md) and [per-request sample differences](code/evaluation/sample_metrics.json).
+
+> [!WARNING]
+> Validation establishes consistency with the reconstructed forecast, not hidden-test accuracy or real-world financial safety. Variable-expense estimates and inferred recurrence remain the main source of uncertainty.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A[CSV records and messages] --> C[Evidence resolution]
+    B[Images: reviewed and hash-checked facts] --> C
+    C --> D[Canonical events and fixed dated FX]
+    D --> E[90-day cash-flow forecast]
+    E --> F[Safe amount and earliest full-payment date]
+    F --> G[Candidate plans and permitted spending changes]
+    G --> H[Deterministic ranking]
+    H --> I[Independent safety verification]
+    I --> J[Template explanation and output.csv]
 ```
 
-Only `dataset/requests.csv` requires predictions. Everything else is context. Join user records with `user_id`, request records with `request_id`, supporting evidence with `related_event_id`, and exchange rates with the rate date and currency pair.
+Money uses decimal conversion and integer hundredths. The forecast includes the request day through day 90, counts supported cash events, and protects the user's minimum balance. Pending credits and unrealized investments do not become available cash.
 
-Amounts are in the user's `home_currency` — the dataset uses INR, ZAR, IDR, USD, and EUR, and every conversion rate you need is in `exchange_rates.csv`. All dates are `YYYY-MM-DD`. Live exchange rates, market data, and banking access are not required.
+Plans respect payment preferences, supplied installment schedules, and restrictions on flexible recurring expenses. Evidence can amend financial facts; embedded instructions cannot change the planning rules.
 
----
+The 16 supplied images were reviewed during development, with extracted facts cached in [image_facts.json](code/image_facts.json). Image hashes are checked: unknown, missing, or changed images require new extraction rather than silently becoming zero-valued transactions.
 
-## What You Need to Build
+## Documentation
 
-For every row in `dataset/requests.csv`, produce one row in `output.csv` with:
+| File | Purpose |
+| --- | --- |
+| [Implementation guide](code/README.md) | Modules, runtime options, evidence handling, and forecast assumptions |
+| [Evaluation report](code/evaluation/results.md) | Verification evidence and unresolved sample disagreements |
+| [Usage report](code/evaluation/usage_report.md) | Final-run model usage and development accounting limitations |
+| [Run report](code/evaluation/run_report.json) | Input/output hashes, chosen options, and validation traces |
+| [Submission checklist](SUBMISSION.md) | Required artifacts and upload instructions |
+| [Challenge specification](problem_statement.md) | Authoritative input/output contract and decision rules |
 
-| Column | Meaning |
-|---|---|
-| `request_id` | The request being answered |
-| `amount_safe_to_pay` | Largest amount safe to pay on `request_date` before optional spending changes, after protecting essentials and the minimum balance |
-| `affordability_status` | `affordable_now`, `affordable_with_plan`, `affordable_later`, or `not_affordable` |
-| `recommended_payment_method` | `full_payment`, `partial_payment`, `installments`, `wait`, or `not_recommended` |
-| `payment_plan` | Chronological `<YYYY-MM-DD>:<amount>` entries joined by `\|`, or `none` |
-| `earliest_date_for_full_payment` | Earliest date the full amount is forecast safe as one payment; empty if never within the forecast |
-| `spending_changes_needed` | Up to three `stop:<event_id>` / `reduce_to:<event_id>:<amount>` changes joined by `\|`, or `none` |
-| `decision_explanation` | Short explanation and the financial facts behind it |
+## Limitations and next steps
 
-`0 <= amount_safe_to_pay <= requested_amount` must always hold. Installment plans must exactly match a supplied payment option, and only recurring expenses marked flexible may be changed.
+The expense model uses full-history means and a heuristic for inferring base amounts from reducible-expense floors. Historical cadence also informs recurrence. These are documented assumptions, not a claim to reproduce the organizer's hidden model.
 
-`affordable_with_plan` means the full request is completed through a partial-payment schedule, installments, or permitted spending changes. Recommend `partial_payment` only when the request allows it, the user accepts it, `0 < amount_safe_to_pay < requested_amount`, and `earliest_date_for_full_payment` is on or before `desired_completion_date`. Use exactly two payments: pay `amount_safe_to_pay` on `request_date`, then pay the remaining amount on `earliest_date_for_full_payment`. The two payments must add up to `requested_amount`. Unlike installments, partial payment does not need to match a supplied payment option.
+The most useful next improvement is to clarify the expected variable-expense forecasting convention, then test it against new cases. Message parsing is deliberately bounded; new document types and languages require additional extraction support and regression tests.
 
----
+The final prediction run is offline. AI-assisted development and image review are separate from that run, and their unmetered usage is not claimed to be free.
 
-## Suggested Workflow
+## Author and acknowledgements
 
-1. Inspect `dataset/sample_requests.csv` — 25 requests with completed output columns — to understand the expected format and decision style.
-2. Reconstruct each user's financial state from `financial_profiles.csv` and `financial_events.csv`: separate recurring expenses from one-time events, reserve pending transactions, count confirmed salary only on its settlement date, and de-duplicate repeated representations of the same event.
-3. When an event has a blank `amount`, find its `event_id` as `related_event_id` in `images.csv` and extract the amount from the linked image. Never treat a blank amount as zero. Pull in any other relevant messages, images, and payment options for the request.
-4. Forecast forward and generate a plan that keeps the balance above the minimum at every step.
-5. Verify deterministically — bounds, plan feasibility, schedule match, flexible-only spending changes — before writing `output.csv`.
-6. Score yourself on the solved samples, then run the full dataset.
+Built by [Mahesh Koduri](https://github.com/MaheshBhushan) for HackerRank Orchestrate, September 2026. Challenge specification and supplied dataset originate from [InterviewStreet's challenge repository](https://github.com/interviewstreet/hackerrank-orchestrate-september26).
 
-You may use any language or runtime. Python, JavaScript, and TypeScript are all reasonable choices.
-
----
-
-## Requirements
-
-Your solution must:
-
-- be runnable from the terminal
-- read the provided files from `dataset/`
-- produce a valid `output.csv` with the exact required columns in the exact required order
-- include one prediction for every `request_id` in `dataset/requests.csv`
-- not use organizer-only files or hardcoded labels
-- keep behavior deterministic where possible
-
-If you use API keys or secrets, read them from environment variables. Never hardcode secrets in the repo.
-
----
-
-## Evaluation
-
-Your `output.csv` will be compared against hidden ground-truth values.
-
-The scoring will consider:
-
-- accuracy of `amount_safe_to_pay`
-- correctness of `affordability_status`
-- correctness of `recommended_payment_method` and `payment_plan`
-- accuracy of `earliest_date_for_full_payment`
-- validity of `spending_changes_needed`
-- usefulness and consistency of `decision_explanation`
-
-### Token Usage And Cost Analysis
-
-Your `code.zip` must include one token-usage file:
-
-```text
-evaluation/usage_report.md
-```
-
-The report must cover model providers and names, model calls, input and output tokens, total and average tokens per request, estimated total and per-request cost. The reported values must correspond to the final full-dataset run that produced your `output.csv`.
-
----
-
-## Chat Transcript Logging
-
-This repo includes an [`AGENTS.md`](./AGENTS.md) file for AI coding tools. It asks compatible tools to append conversation summaries to a `log.txt` in the repository root — the same directory as `AGENTS.md`:
-
-| Platform | Path |
-|---|---|
-| macOS / Linux | `<repo root>/log.txt` |
-| Windows | `<repo root>\log.txt` |
-
-The path resolves relative to `AGENTS.md`, so it stays correct across clones, renames, and checkouts. `log.txt` is gitignored — upload it as your chat transcript at submission time. Do not paste secrets into the chat.
-
-In case, the harness you are using is not in the repo root, you can explicitly ask the agent to look for the AGENTS.md in this folder & then continue.
-
----
-
-## Submission
-
-Submit the following files as instructed by HackerRank:
-
-| File | Description |
-|---|---|
-| `code.zip` | Full runnable solution, prompts/configuration, README, and the required `evaluation/` folder |
-| `output.csv` | Predictions for every row in `dataset/requests.csv` |
-| `chat_transcript` | The `log.txt` described above, showing how you developed or used the system |
-
-Before submitting, confirm:
-
-- `output.csv` has one row per row in `dataset/requests.csv` (250 rows plus the header).
-- `output.csv` has the exact required columns in the exact required order.
-- Every `amount_safe_to_pay` satisfies `0 <= amount_safe_to_pay <= requested_amount`.
-- Every installment plan matches a supplied payment option, and every spending change targets a flexible recurring expense.
-- Your runnable code, setup instructions, and `evaluation/` folder are included in `code.zip`.
+No license file is currently declared in this repository. Do not assume reuse permissions for the implementation or supplied challenge data.
